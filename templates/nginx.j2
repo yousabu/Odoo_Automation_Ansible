@@ -1,0 +1,16 @@
+upstream odoo {
+        server 127.0.0.1:{{odoo_port}};
+}
+
+
+
+server {
+        listen 80;
+        server_name {{domain}};
+
+        location / {
+                proxy_pass http://odoo;
+        }
+
+
+}
