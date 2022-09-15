@@ -61,6 +61,8 @@
 # CREATE USER FOR ODOO
 - name: Create Odoo User To createDB
   hosts: postgres
+  become: true
+  become_method: sudo
   vars_files:
     - crid.yml
   tasks:
@@ -108,6 +110,64 @@
       become_user: postgres
       notify: Restart postgresql
 
+##############################
+#     SETUP BACKUP SCRIPT    #
+##############################
+    - name: Setup backup Script For postgres databases
+      ansible.builtin.template:
+        src: autopostgresqlbackup.j2
+        dest: /var/lib/postgresql/autopostgresqlbackup.sh
+        owner: postgres
+        mode: 0755
+      
+    - name: Create backup directory
+      ansible.builtin.file:
+        name: /backup
+        group: postgres
+        owner: postgres
+        mode: 0755
+        state: directory
+    - name: Create databases directory
+      ansible.builtin.file:
+        name: /backup/databases
+        group: postgres
+        owner: postgres
+        mode: 0755
+        state: directory
+    - name: Create weekly directory
+      ansible.builtin.file:
+        name: /backup/databases/weekly
+        group: postgres
+        owner: postgres
+        mode: 0775
+        state: directory
+    - name: Create backup directory
+      ansible.builtin.file:
+        name: /backup/databases/daily
+        group: postgres
+        owner: postgres
+        mode: 0775
+        state: directory
+    - name: Create monthly directory
+      ansible.builtin.file:
+        name: /backup/databases/monthly
+        group: postgres
+        owner: postgres
+        mode: 0775
+        state: directory
+
+
+    - name: Crontab to run autopostgresqlbackup Script
+      ansible.builtin.cron:
+        name: postgres backup
+        user: postgres
+        weekday: "*"
+        minute: "*"
+        hour: "3"
+        job: "/var/lib/postgresql/autopostgresqlbackup.sh"
+
+
+######################################
   handlers:
     - name: Restart postgresql
       become: true
