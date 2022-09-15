@@ -1,0 +1,36 @@
+---
+- name: create sg
+  hosts: localhost
+  vars:
+    ami: ami-08d4ac5b634553e16
+  tasks:
+    - name: create security group 
+      amazon.aws.ec2_group:
+        name: odoo_sg
+        # aws_secret_key: kG8G7W6h4Hz6taoK9HYc2OJE29iLRPRL26xMvgIb
+        # aws_access_key: AKIAZ5YJS3A4VZ2APTVT
+        description: to allow traffic for odoo
+        region: us-east-1
+        vpc_id: vpc-065f8b206d4db1c85
+        rules:
+          - proto: all
+            from_port: 0
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+      register: sg
+
+    - name: ddd
+      amazon.aws.ec2:
+        instance_type: t2.meduim
+        key_name: devops
+        image: "{ami}"
+        region: us-east-1
+        group: "{{sg.group_name}}"
+        count: 1
+        vpc_subnet_id: "{{sg.vpc_id}}"
+        wait: yes
+        assign_public_ip: yes 
+
+
+
+    

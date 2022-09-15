@@ -1,7 +1,13 @@
 odoo_version: 15.0
 admin_pass: Admin@pass@admin500
-domain: 44.203.150.248
-username: klash
+username: python
 password: Admin@5001
 odoo_port: 8050
 longpolling: 8051
+email: shbanmhmdywsf8@gmail.com
+api_key: 8b12b5653ba417b7af92b063c733852a1932e
+zone_name: abuhamda.site
+record_name: python
+server_ip: 18.205.247.192
+aws_secret_key: kG8G7W6h4Hz6taoK9HYc2OJE29iLRPRL26xMvgIb
+aws_access_key: AKIAZ5YJS3A4VZ2APTVT

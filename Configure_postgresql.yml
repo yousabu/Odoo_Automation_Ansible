@@ -8,16 +8,27 @@
     postgres_data_dir: "/var/lib/postgresql/{{ postgres_version }}/main"
     ansible_ssh_pipelining: true
   tasks:
-    - name: Update apt repo and cache on all Ubuntu boxes
+    - name: Set up Postgres 14 repo
+      shell: |
+        echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        sudo apt-get update
+      args:
+        warn: no 
+    - name: Install postgres14
+      apt:
+        name: postgresql-14
+        update_cache: yes
+        state: present
+
+
+    - name: Update And Upgrade System
       apt:
         update_cache: yes
         force_apt_get: yes
         cache_valid_time: 3600
-
-    - name: Upgrade all packages on servers
-      apt:
         upgrade: dist
-        force_apt_get: yes
+
 
     - name: Install required packages
       apt:
@@ -28,32 +39,6 @@
           - postgresql-contrib
           - libpq-dev
         state: latest
-
-    # - name: copy postgres bash
-    #   ansible.builtin.copy:
-    #     src: postgres.sh
-    #     dest: /tmp
-    #     mode: 0770
-
-    # - name: install postgres
-    #   ansible.builtin.shell: bash /tmp/postgres.sh
-        
-
-
-    # - name: Set up Postgres 14 repo
-    #   shell: |
-    #     echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-    #     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-    #     sudo apt-get update
-    #     sudo apt-get -y install postgresql
-    #   args:
-    #     warn: no 
-
-    # - name: Install postgres14
-    #   apt:
-    #     name: postgresql
-    #     update_cache: yes
-    #     state: present
 
     - name: Check if postgres is initialize
       stat:
@@ -72,8 +57,8 @@
         state: started
         enabled: true
 
-# CREATE USER FOR ODOO
 
+# CREATE USER FOR ODOO
 - name: Create Odoo User To createDB
   hosts: postgres
   vars_files:
@@ -94,8 +79,8 @@
         password: "{{password}}"
         role_attr_flags: CREATEDB
 
-# ALLOW REMOTE CONNECTION AND MD5 AUTH  
 
+# ALLOW REMOTE CONNECTION AND MD5 AUTH  
     - name: Utility present
       ansible.builtin.package:
         name: python3-psycopg2

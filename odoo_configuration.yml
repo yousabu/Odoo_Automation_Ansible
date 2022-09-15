@@ -16,6 +16,10 @@
         upgrade: dist
         force_apt_get: yes
 
+
+########################################
+#         REQUIRED PACKAGES            #
+########################################
     - name: required package
       apt:
         name:
@@ -46,35 +50,40 @@
           - libharfbuzz-dev 
           - libfribidi-dev 
           - libxcb1-dev
-                  
+ 
 
 
+######################################                 
+#  ODOO INSTALL FROM GITHUB SOURCE   #
+######################################
     - name: git odoo vars_files
       ansible.builtin.git:
         repo: https://github.com/odoo/odoo.git
         dest: /opt/odoo{{odoo_version}}
         version: "{{odoo_version}}"
         depth: 1
-
     - name: download wkhtmltopdf
       ansible.builtin.get_url:
         url:  https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.bionic_amd64.deb
         dest: /tmp
-
     - name: Install wkhtmltopdf 
       ansible.builtin.apt:
         deb: /tmp/wkhtmltox_0.12.5-1.bionic_amd64.deb
-
-
     - name: Install Odoo Requirements.txt
       ansible.builtin.pip:
         requirements: /opt/odoo15.0/requirements.txt
+ 
 
+
+
+
+###################################
+#   ODOO GROUP,USER,DIRS CREATE   #
+###################################
     - name: Create Odoo Group
       ansible.builtin.group:
         name: odoo
         state: present
-    
     - name: create projects dirs
       ansible.builtin.file:
         path: /opt/odoo{{odoo_version}}/projects 
@@ -82,7 +91,6 @@
         group: odoo
         mode: 0770
         recurse: true
-
     - name: create runs dir
       ansible.builtin.file:
         path:  /opt/odoo{{odoo_version}}/runs
@@ -90,12 +98,10 @@
         group: odoo
         mode: 0770
         recurse: true
-
     - name: create etc odoo dir
       ansible.builtin.file:
         path: /etc/odoo
         state: directory
-
     - name: Create log dir
       ansible.builtin.file:
         path: /var/log/odoo
@@ -103,49 +109,44 @@
         group: odoo
         mode: 0770
         recurse: true
-
-
     - name: Create user home 
       ansible.builtin.user:
         name: "{{username}}"
         group: odoo
         home: /opt/odoo{{odoo_version}}/projects/{{username}}
         shell: /sbin/nologin
-
     - name: data dirs
       ansible.builtin.file:
         path: /opt/odoo15.0/projects/{{username}}/data
         group: odoo
-        owner: klash
+        owner: "{{username}}"
         mode: 0770
         state: directory
-
     - name:  custom dirs
       ansible.builtin.file:
         path: /opt/odoo15.0/projects/{{username}}/custom
         group: odoo
-        owner: klash
+        owner: "{{username}}"
         mode: 0770
         state: directory
 
-      
+
+#####################################
+#       ODOO SERVICE CONFIGURE      #
+#####################################
     - name: Create a python3 link
       ansible.builtin.file:
         src: /bin/python3
         dest: /bin/{{username}}
         state: link
-
-
     - name: copy config file
       ansible.builtin.template:
         src: config.j2
         dest: /etc/odoo/{{username}}.conf
-
     - name: copy service file
       ansible.builtin.template:
         src: service.j2
         dest: /etc/systemd/system/{{username}}.service
-
     - name: daemon reload and start/enable service
       ansible.builtin.systemd:
         daemon_reload: yes
@@ -154,17 +155,43 @@
         enabled: true
 
 
-    - name: Configure reverse proxy
+
+#############################################
+#     CONFIGURE DOMAIN NAME WITH SSL        #
+#############################################
+    - name: Add Domain to cloudflare
+      ansible.builtin.cloudflare_dns:
+        zone: "{{zone_name}}"
+        record: "{{record_name}}"
+        type: A
+        value: "{{server_ip}}"
+        account_email: "{{email}}"
+        account_api_key: "{{api_key}}"
+        state: present
+        proxied: true
+      register: record
+    - name: Configure nginx as reverse proxy
       ansible.builtin.template:
         src: nginx.j2
         dest: /etc/nginx/conf.d/{{username}}.conf
-      
     - name: Restart nginx
       ansible.builtin.service:
         name: nginx
         state: restarted
+    - name: setup https with cerbot 
+      ansible.builtin.apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+    - name: Configure ssl
+      ansible.builtin.shell: certbot --nginx -d {{record_name}}.{{zone_name}}  --redirect -m {{email}} --agree-tos
 
-        
 
 
-    
+
+#####################################
+#       PRINT WEB LINK              #
+#####################################
+    - name: print Domain
+      ansible.builtin.debug:
+        msg: "{{record_name}}.{{zone_name}}"

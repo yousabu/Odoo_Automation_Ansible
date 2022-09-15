@@ -1,5 +1,5 @@
 [postgres]
-44.203.150.248
+18.205.247.192
 
 [postgres:vars]
 ansible_ssh_private_key_file=devops.pem
@@ -8,7 +8,7 @@ ansible_user=ubuntu
 
 
 [odoo]
-44.203.150.248
+18.205.247.192
 
 [odoo:vars]
 ansible_ssh_private_key_file=devops.pem

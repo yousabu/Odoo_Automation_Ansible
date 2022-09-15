@@ -6,7 +6,7 @@ upstream odoo {
 
 server {
         listen 80;
-        server_name {{domain}};
+        server_name {{record_name}}.{{zone_name}};
 
         location / {
                 proxy_pass http://odoo;
