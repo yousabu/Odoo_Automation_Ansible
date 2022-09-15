@@ -7,8 +7,6 @@
     - name: create security group 
       amazon.aws.ec2_group:
         name: odoo_sg
-        # aws_secret_key: kG8G7W6h4Hz6taoK9HYc2OJE29iLRPRL26xMvgIb
-        # aws_access_key: AKIAZ5YJS3A4VZ2APTVT
         description: to allow traffic for odoo
         region: us-east-1
         vpc_id: vpc-065f8b206d4db1c85
